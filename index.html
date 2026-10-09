@@ -47,7 +47,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15p
 
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 h1{font-family:var(--display);font-weight:700;font-size:19px;margin:0;letter-spacing:-.01em}
-.brand{display:flex;flex-direction:column;gap:3px;min-width:0}
+.brand{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.bar{height:6px;border-radius:999px;background:var(--line);overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .8s ease-out}
 .count{margin:0;font-size:13px;color:var(--muted);display:flex;align-items:baseline;gap:6px}
 .count b{font-family:var(--display);font-weight:700;font-size:15px;color:var(--accent);font-variant-numeric:tabular-nums}
 
@@ -130,7 +132,7 @@ h2{font:500 12px var(--body);text-transform:uppercase;letter-spacing:.08em;color
 <body>
 <div class="app">
   <header>
-    <div class="brand"><h1>Аля и Андрей</h1><p class="count" id="count" hidden><b id="count-n"></b><span id="count-t"></span></p></div>
+    <div class="brand"><h1>Аля и Андрей</h1><p class="count" id="count" hidden><b id="count-n"></b><span id="count-t"></span></p><div class="bar" id="bar" role="progressbar" aria-label="Пройдено до встречи" aria-valuemin="0" aria-valuemax="100" hidden><i id="bar-fill"></i></div></div>
   </header>
 
   <div class="scene" id="scene">
@@ -338,8 +340,10 @@ function ago(ts){
 function plural(n,a,b,c){ const m=n%100,k=n%10; return m>10&&m<20?c:k===1?a:k>=2&&k<=4?b:c; }
 function countdown(){
   const target=new Date(2026,10,21), ms=target-Date.now(), el=$('count');
-  if(ms<=-864e5){ el.hidden=true; return; }
+  if(ms<=-864e5){ el.hidden=true; $('bar').hidden=true; return; }
   el.hidden=false;
+  const start=new Date(2026,9,9), f=Math.min(1,Math.max(.02,(Date.now()-start)/(target-start)));
+  $('bar').hidden=false; $('bar-fill').style.width=(f*100).toFixed(1)+'%'; $('bar').setAttribute('aria-valuenow',Math.round(f*100));
   if(ms<=0){ $('count-n').textContent='Сегодня'; $('count-t').textContent='21 ноября'; return; }
   const days=Math.floor(ms/864e5), hours=Math.ceil(ms/36e5);
   if(days>=1){ const n=Math.ceil(ms/864e5); $('count-n').textContent=n; $('count-t').textContent=plural(n,'день','дня','дней')+' до 21 ноября'; }
@@ -503,3 +507,4 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState!=
 </script>
 </body>
 </html>
+
