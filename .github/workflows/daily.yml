@@ -1,0 +1,37 @@
+name: Daily countdown
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send
+        env:
+          ROOM_URL: ${{ secrets.ROOM_URL }}
+        run: |
+          set -e
+          export TZ=Europe/Moscow
+          today=$(date +%Y-%m-%d)
+          days=$(( ( $(date -d 2026-11-21 +%s) - $(date -d "$today" +%s) ) / 86400 ))
+          if [ "$days" -lt 0 ]; then exit 0; fi
+          if [ "$days" -eq 0 ]; then text="Сегодня тот самый день! Встреча ❤️"
+          else
+            m=$(( days % 100 )); k=$(( days % 10 ))
+            if [ "$m" -ge 11 ] && [ "$m" -le 14 ]; then w="дней"; r="Осталось"
+            elif [ "$k" -eq 1 ]; then w="день"; r="Остался"
+            elif [ "$k" -ge 2 ] && [ "$k" -le 4 ]; then w="дня"; r="Осталось"
+            else w="дней"; r="Осталось"; fi
+            text="Доброе утро! $r $days $w до встречи ❤️"
+          fi
+          tg=$(curl -fsS "$ROOM_URL/tg.json")
+          token=$(echo "$tg" | jq -r '.token // empty')
+          if [ -z "$token" ]; then exit 0; fi
+          echo "::add-mask::$token"
+          code=$(basename "$ROOM_URL")
+          markup="{\"inline_keyboard\":[[{\"text\":\"Открыть\",\"url\":\"https://naserdce.github.io/nashe/#$code\"}]]}"
+          for id in $(echo "$tg" | jq -r '.chats | to_entries[] | .value | select(. != 0)'); do
+            curl -fsS -o /dev/null "https://api.telegram.org/bot$token/sendMessage" \
+              --data-urlencode "chat_id=$id" --data-urlencode "text=$text" --data-urlencode "reply_markup=$markup"
+          done
