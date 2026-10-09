@@ -57,10 +57,10 @@ h1{font-family:var(--display);font-weight:700;font-size:19px;margin:0;letter-spa
   background:linear-gradient(var(--sky-top) 0%,var(--sky-mid) 38%,var(--sky-low) 60%)}
 .scene svg{display:block;width:100%;height:auto}
 /* the scene keeps its own time of day, whatever theme the page is in */
-.scene[data-time="morning"]{--sky-top:#a9c7e8;--sky-mid:#f3d6d9;--sky-low:#fde3b8;--far:#93a0bd;--water:#b9cbe2;--glint:#fff3e0;--stone:#9a96a2;--stone-top:#b9b5c2;--pave:#cfcbd6;--coat:#24212b;--fig-edge:transparent}
-.scene[data-time="day"]{--sky-top:#5aa7e6;--sky-mid:#9ccdf2;--sky-low:#d6ecfb;--far:#7f95b3;--water:#6fa9d8;--glint:#e4f3ff;--stone:#9d9aa5;--stone-top:#bdbac6;--pave:#d3d0da;--coat:#24212b;--fig-edge:transparent}
-.scene[data-time="evening"]{--sky-top:#8ea2ca;--sky-mid:#cdc5dc;--sky-low:#f7caa0;--far:#7d86a6;--water:#a3aecb;--glint:#e9d9d6;--stone:#8b8794;--stone-top:#aca8b6;--pave:#c4c0cc;--coat:#24212b;--fig-edge:transparent}
-.scene[data-time="night"]{--sky-top:#121831;--sky-mid:#2a2648;--sky-low:#5b3551;--far:#0f1326;--water:#1c2340;--glint:#6a5a86;--stone:#33303e;--stone-top:#474354;--pave:#262330;--coat:#17151d;--fig-edge:#7a748e}
+[data-time="morning"]{--nk:0;--sky-top:#a9c7e8;--sky-mid:#f3d6d9;--sky-low:#fde3b8;--far:#93a0bd;--water:#b9cbe2;--glint:#fff3e0;--stone:#9a96a2;--stone-top:#b9b5c2;--pave:#cfcbd6;--coat:#24212b;--fig-edge:transparent}
+[data-time="day"]{--nk:0;--sky-top:#5aa7e6;--sky-mid:#9ccdf2;--sky-low:#d6ecfb;--far:#7f95b3;--water:#6fa9d8;--glint:#e4f3ff;--stone:#9d9aa5;--stone-top:#bdbac6;--pave:#d3d0da;--coat:#24212b;--fig-edge:transparent}
+[data-time="evening"]{--nk:.22;--sky-top:#8ea2ca;--sky-mid:#cdc5dc;--sky-low:#f7caa0;--far:#7d86a6;--water:#a3aecb;--glint:#e9d9d6;--stone:#8b8794;--stone-top:#aca8b6;--pave:#c4c0cc;--coat:#24212b;--fig-edge:transparent}
+[data-time="night"]{--nk:.6;--sky-top:#121831;--sky-mid:#2a2648;--sky-low:#5b3551;--far:#0f1326;--water:#1c2340;--glint:#6a5a86;--stone:#33303e;--stone-top:#474354;--pave:#262330;--coat:#17151d;--fig-edge:#7a748e}
 .rain{animation:rain .55s linear infinite} .snowfall{animation:snow 5s linear infinite}
 @keyframes rain{to{transform:translate(-12px,48px)}} @keyframes snow{to{transform:translate(-10px,64px)}}
 .bubble{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:-2px}
@@ -90,7 +90,7 @@ h1{font-family:var(--display);font-weight:700;font-size:19px;margin:0;letter-spa
 @keyframes twinkle{from{opacity:.45}to{opacity:1}}
 @media (prefers-reduced-motion: reduce){
   .fig,.arm{transition:none}
-  .wave,.float,.twinkle,.rain,.snowfall,.scene.play .hop.is-sender{animation:none}
+  .wave,.float,.twinkle,.rain,.snowfall,.confetti,.scene.play .hop.is-sender{animation:none}
 }
 
 .controls{display:flex;flex-direction:column;gap:14px}
@@ -142,6 +142,14 @@ summary{cursor:pointer;font-family:var(--display);font-weight:500;font-size:15px
 details .picks{margin-top:12px}
 .pick{align-items:flex-start}
 .pick>span{padding-top:7px}
+.stats{display:flex;gap:14px}
+.stat{display:flex;flex-direction:column;align-items:flex-end;font-size:11px;color:var(--muted);white-space:nowrap}
+.stat b{font-family:var(--display);font-weight:700;font-size:17px;line-height:1.2;color:var(--ink);display:flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
+.stat svg{width:14px;height:14px;fill:var(--accent)}
+.city{font:600 11px var(--body);fill:#fff;paint-order:stroke;stroke:rgba(20,18,37,.5);stroke-width:3px}
+.party{margin:0;text-align:center;font-family:var(--display);font-weight:700;font-size:18px;line-height:1.25;text-wrap:balance;color:var(--accent)}
+.confetti{transform-box:fill-box;transform-origin:center;animation:confetti linear infinite}
+@keyframes confetti{from{transform:translateY(0) rotate(0)}to{transform:translateY(600px) rotate(720deg)}}
 .switch{align-self:center;background:none;border:0;color:var(--muted);font:400 12px var(--body);text-decoration:underline;cursor:pointer;padding:8px}
 </style>
 </head>
@@ -149,6 +157,10 @@ details .picks{margin-top:12px}
 <div class="app">
   <header>
     <div class="brand"><h1>Аля и Андрей</h1><p class="count" id="count" hidden><b id="count-n"></b><span id="count-t"></span></p><div class="bar" id="bar" role="progressbar" aria-label="Пройдено до встречи" aria-valuemin="0" aria-valuemax="100" hidden><i id="bar-fill"></i></div></div>
+    <div class="stats" id="stats" hidden>
+      <div class="stat"><b><svg viewBox="-8 -9 16 14" aria-hidden="true"><path d="M0,3.4C-7,-2 -3.6,-8 0,-4C3.6,-8 7,-2 0,3.4Z"/></svg><span id="st-today">0</span></b>сегодня</div>
+      <div class="stat"><b id="st-streak">0</b><span id="st-streak-t">дней подряд</span></div>
+    </div>
   </header>
 
   <div class="scene" id="scene">
@@ -164,6 +176,7 @@ details .picks{margin-top:12px}
       <g id="wx-front"></g>
     </svg>
   </div>
+  <p class="party" id="party" hidden>Дождались! Сегодня вы наконец вместе.</p>
   <div class="bubble" id="bubble" data-mine="0">
     <div class="bubble-in"><div class="bubble-text" id="bubble-text"></div></div>
     <div class="bubble-meta" id="bubble-meta"></div>
@@ -196,8 +209,9 @@ details .picks{margin-top:12px}
     <summary>Сцена</summary>
     <div class="picks">
       <div class="pick"><span id="place-label">Место</span><div class="seg" id="seg-place" role="group" aria-labelledby="place-label"></div></div>
-      <div class="pick"><span id="time-label">Время</span><div class="seg" id="seg-time" role="group" aria-labelledby="time-label"></div></div>
-      <div class="pick"><span id="wx-label">Погода</span><div class="seg" id="seg-weather" role="group" aria-labelledby="wx-label"></div></div>
+      <div class="pick"><span id="mode-label">Погода и время</span><div class="seg" id="seg-mode" role="group" aria-labelledby="mode-label"></div></div>
+      <div class="pick" id="pick-time"><span id="time-label">Время</span><div class="seg" id="seg-time" role="group" aria-labelledby="time-label"></div></div>
+      <div class="pick" id="pick-weather"><span id="wx-label">Погода</span><div class="seg" id="seg-weather" role="group" aria-labelledby="wx-label"></div></div>
     </div>
   </details>
   </div>
@@ -253,7 +267,9 @@ const MOODS={
   tired:{label:'Без сил',face:{eyes:'sleep',mouth:'flat'}}, angry:{label:'Злюсь',face:{eyes:'angry',mouth:'pout',blush:1}}
 };
 const LOOKS={black:'',beige:'#cdb08f',red:'#a8323a',blue:'#3d5a8c',green:'#4c6b55'}, LOOK_NAMES={black:'Чёрное',beige:'Бежевое',red:'Красное',blue:'Синее',green:'Зелёное'};
-const PL={embankment:'Набережная',home:'Дом',cafe:'Кафе',station:'Вокзал',airport:'Аэропорт'}, INDOOR={home:1,cafe:1,airport:1};
+const MODES={auto:'Настоящие',manual:'Вручную'};
+const CITY={alya:{name:'Москва',lat:55.75,lon:37.62},andrey:{name:'Краснодар',lat:45.04,lon:38.98}};
+const PL={cities:'Два города',embankment:'Набережная',home:'Дом',cafe:'Кафе',station:'Вокзал',airport:'Аэропорт'}, INDOOR={home:1,cafe:1,airport:1};
 const SKYWIN=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" style="fill:var(--sky-top)"/><rect x="${x}" y="${y+h*.45}" width="${w}" height="${h*.3}" style="fill:var(--sky-mid)"/><rect x="${x}" y="${y+h*.72}" width="${w}" height="${h*.28}" style="fill:var(--sky-low)"/>`;
 const PLACES={
   embankment:()=>'<path class="far" d="M0,172V158h26v-10h44v10h30v-6h18v6h40v-14h22v14h36v-8h30v8h46v-12h28v12h40v14z"/><rect class="water" x="0" y="172" width="360" height="46"/><g class="glint" stroke-width="2" stroke-linecap="round" fill="none"><path d="M150,182h60M132,192h34M196,194h44M160,204h52"/></g><rect class="stone" x="0" y="214" width="360" height="38"/><rect class="stone-top" x="0" y="214" width="360" height="7"/><rect class="pave" x="0" y="252" width="360" height="28"/>',
@@ -288,7 +304,7 @@ const PLACES={
     <rect x="304" y="210" width="30" height="36" rx="5" fill="#c2413b"/><path d="M312,210v-14h14v14" fill="none" stroke="#6b6f7a" stroke-width="3"/>
     <rect y="238" width="360" height="42" fill="#c6ccd4"/><rect y="238" width="360" height="3" fill="#b0b7c1"/>`
 };
-let acc={hat:0,umb:0,cup:0};
+let acc={alya:{},andrey:{}};
 const FIG={
   alya:{x:128,side:1,scale:.94,lips:'#b23340',hair:'#7a1f26'},
   andrey:{x:234,side:-1,scale:1.07,lips:'#8a4b3c',hair:'#8b6a48'}
@@ -386,26 +402,23 @@ function fxMarkup(kind,from){
 function pose(id,p){
   const f=FIG[id], g=document.getElementById('fig-'+id); p=Object.assign({},REST,p);
   const cur=FIG.andrey.x-FIG.alya.x, dx=p.gap?Math.max(0,(cur-p.gap)/2):p.dx;
-  const free=p.outer===REST.outer&&!p.wave, umb=acc.umb&&free, cup=acc.cup&&free&&!umb;
+  const free=p.outer===REST.outer&&!p.wave, A=acc[id]||{}, umb=A.umb&&free, cup=A.cup&&free&&!umb;
   g.style.transform=`translate(${f.x+f.side*dx}px,${GROUND}px) rotate(${f.side*p.lean}deg) scale(${f.scale})`;
   const inner=g.querySelector('.arm-inner'), outer=g.querySelector('.arm-outer');
   inner.style.transform=`translate(${f.side*24}px,-112px) rotate(${-f.side*p.inner}deg)`;
   outer.style.transform=`translate(${-f.side*24}px,-112px) rotate(${f.side*(umb?165:p.outer)}deg)`;
   outer.querySelector('.arm-in').classList.toggle('wave',!!p.wave);
   const show=(c,on)=>{ g.querySelector(c).style.display=on?'':'none'; };
-  show('.acc-hat',acc.hat); show('.acc-scarf',acc.hat); show('.acc-umb',umb); show('.acc-cup',cup);
+  show('.acc-hat',A.hat); show('.acc-scarf',A.hat); show('.acc-umb',umb); show('.acc-cup',cup);
   const col=LOOKS[state.looks[id]]||''; g.querySelectorAll('.coat').forEach(c=>{ c.style.fill=col; });
   g.querySelector('.face').innerHTML=face(p,f);
 }
 
-function weather(){
-  const sc=state.scene, el=$('scene'); el.dataset.time=sc.time; el.dataset.indoor=sc.place==='embankment'?'0':'1';
-  $('place').innerHTML=PLACES[sc.place]();
-  if(INDOOR[sc.place]){ $('wx-back').innerHTML=''; $('wx-front').innerHTML=''; return; }
+function wxLayers(time,wx){
   let back='', front='';
-  if(sc.time==='night'&&sc.weather==='clear') [[40,60],[92,118],[150,30],[214,128],[262,96],[318,140],[336,70],[20,140],[118,84]].forEach(a=>{ back+=`<circle cx="${a[0]}" cy="${a[1]}" r="1.4" fill="#fff" opacity=".8"/>`; });
-  if(sc.weather!=='clear'){
-    const rain=sc.weather==='rain';
+  if(time==='night'&&wx==='clear') [[40,60],[92,118],[150,30],[214,128],[262,96],[318,140],[336,70],[20,140],[118,84]].forEach(a=>{ back+=`<circle cx="${a[0]}" cy="${a[1]}" r="1.4" fill="#fff" opacity=".8"/>`; });
+  if(wx!=='clear'){
+    const rain=wx==='rain';
     back+=`<rect width="360" height="172" fill="${rain?'#465068':'#8e97ad'}" opacity="${rain?.42:.3}"/>`;
     [[70,34],[190,22],[300,40]].forEach(a=>{ back+=`<g fill="${rain?'#8a92a6':'#e9ecf3'}" opacity=".9"><circle cx="${a[0]-20}" cy="${a[1]}" r="14"/><circle cx="${a[0]}" cy="${a[1]-8}" r="19"/><circle cx="${a[0]+22}" cy="${a[1]}" r="15"/><rect x="${a[0]-30}" y="${a[1]-2}" width="62" height="16" rx="8"/></g>`; });
     let marks='';
@@ -414,7 +427,37 @@ function weather(){
     else { for(let i=0;i<15;i++){ const x0=i*27+8, y0=(i*37)%64-64; for(let k=0;k<6;k++) marks+=`<circle cx="${x0-10*k}" cy="${y0+64*k}" r="${1.3+(i%3)*.4}"/>`; }
       front=`<g class="snowfall" fill="#fff" opacity=".9">${marks}</g>`; }
   }
-  $('wx-back').innerHTML=back; $('wx-front').innerHTML=front;
+  return {back,front};
+}
+const KRASNODAR=`<rect x="180" y="172" width="180" height="46" fill="#7fa37a"/><rect x="180" y="172" width="180" height="46" fill="#101426" style="opacity:var(--nk)"/>
+  <g class="far"><rect x="196" y="138" width="46" height="38"/><path d="M190,140l29,-17l29,17z"/><rect x="264" y="120" width="40" height="56"/><rect x="320" y="142" width="44" height="34"/><path d="M314,144l28,-15l28,15z"/><ellipse cx="253" cy="142" rx="7" ry="36"/><ellipse cx="311" cy="148" rx="6" ry="30"/><ellipse cx="187" cy="152" rx="6" ry="28"/></g>
+  <g style="fill:var(--glint)"><rect x="204" y="150" width="8" height="10"/><rect x="224" y="150" width="8" height="10"/><rect x="271" y="130" width="8" height="10"/><rect x="288" y="130" width="8" height="10"/><rect x="271" y="150" width="8" height="10"/><rect x="288" y="150" width="8" height="10"/><rect x="334" y="154" width="8" height="10"/></g>
+  <rect class="stone" x="180" y="214" width="180" height="38"/><rect class="stone-top" x="180" y="214" width="180" height="7"/><rect class="pave" x="180" y="252" width="180" height="28"/>`;
+const MOSCOW_EXTRA=`<path class="far" d="M30,160v-34h4v-10l6,-24l6,24v10h4v34z"/><path d="${STAR}" transform="translate(40,90) scale(.9)" fill="#c2413b"/>`;
+function half(side,id,c){
+  const x=side==='L'?0:180, L=wxLayers(c.time,c.weather);
+  const lab=CITY[id].name+(c.temp===null?'':' '+(c.temp>0?'+':'')+c.temp+'°');
+  const bg=`<g data-time="${c.time}" clip-path="url(#clip${side})"><defs><linearGradient id="sky${side}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--sky-top)"/><stop offset=".38" style="stop-color:var(--sky-mid)"/><stop offset=".6" style="stop-color:var(--sky-low)"/></linearGradient></defs>
+    <rect x="${x}" width="180" height="280" fill="url(#sky${side})"/>${L.back}${side==='L'?PLACES.embankment()+MOSCOW_EXTRA:KRASNODAR}
+    <text class="city" x="${side==='L'?12:348}" y="22" text-anchor="${side==='L'?'start':'end'}">${lab}</text></g>`;
+  return {bg,front:`<g clip-path="url(#clip${side})">${L.front}</g>`};
+}
+function confetti(){
+  const cols=['#e04a54','#f6b73c','#5aa7e6','#7fa37a','#fbf7f1','#c98fd0']; let o='';
+  for(let i=0;i<44;i++){ const x=(i*83)%360, y=-((i*57)%300)-10, d=(3.2+(i%5)*.5).toFixed(1), w=4+(i%3)*2;
+    o+=`<rect class="confetti" x="${x}" y="${y}" width="${w}" height="${w*1.6}" rx="1" fill="${cols[i%6]}" style="animation-duration:${d}s;animation-delay:-${(i%7)*.6}s"/>`; }
+  return o;
+}
+function weather(v){
+  const el=$('scene'), party=v.party?confetti():'';
+  if(v.split){ el.dataset.time=v.cA.time; el.dataset.indoor='0';
+    const a=half('L','alya',v.cA), n=half('R','andrey',v.cN);
+    $('place').innerHTML=`<defs><clipPath id="clipL"><rect width="180" height="280"/></clipPath><clipPath id="clipR"><rect x="180" width="180" height="280"/></clipPath></defs>`+a.bg+n.bg+`<path d="M180,0V280" stroke="#fff" stroke-width="2" stroke-dasharray="1 8" stroke-linecap="round" opacity=".75"/>`;
+    $('wx-back').innerHTML=''; $('wx-front').innerHTML=a.front+n.front; return; }
+  el.dataset.time=v.c.time; el.dataset.indoor=v.place==='embankment'?'0':'1';
+  $('place').innerHTML=PLACES[v.place]();
+  if(INDOOR[v.place]){ $('wx-back').innerHTML=''; $('wx-front').innerHTML=party; return; }
+  const L=wxLayers(v.c.time,v.c.weather); $('wx-back').innerHTML=L.back; $('wx-front').innerHTML=L.front+party;
 }
 function ago(ts){
   const d=Math.max(0,Date.now()-ts), m=Math.floor(d/60000);
@@ -436,7 +479,7 @@ function countdown(){
 }
 
 const TIMES={morning:'Утро',day:'День',evening:'Вечер',night:'Ночь'}, WX={clear:'Ясно',rain:'Дождь',snow:'Снег'};
-function cleanScene(s){ s=s||{}; return {time:TIMES[s.time]?s.time:'evening',weather:WX[s.weather]?s.weather:'clear',place:PL[s.place]?s.place:'embankment'}; }
+function cleanScene(s){ s=s||{}; return {time:TIMES[s.time]?s.time:'evening',weather:WX[s.weather]?s.weather:'clear',place:PL[s.place]?s.place:'cities',mode:s.mode==='manual'?'manual':'auto'}; }
 function clean(m){
   if(!m||typeof m!=='object'||!NAMES[m.from]||!KINDS[m.kind]||typeof m.ts!=='number') return null;
   const text=m.kind==='note'?String(m.text||'').slice(0,80):KINDS[m.kind].label;
@@ -448,7 +491,10 @@ function clean(m){
 function list(v){ return Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]); }
 function cleanMoods(v){ v=v||{}; const o={}; ['alya','andrey'].forEach(id=>{ const m=v[id]; o[id]=m&&MOODS[m.k]&&typeof m.ts==='number'?{k:m.k,ts:m.ts}:null; }); return o; }
 function cleanLooks(v){ v=v||{}; return {alya:v.alya in LOOKS?v.alya:'black',andrey:v.andrey in LOOKS?v.andrey:'black'}; }
-function normalize(d){ d=d||{}; return {last:clean(d.last),log:list(d.log).map(clean).filter(Boolean).slice(0,20),scene:cleanScene(d.scene),moods:cleanMoods(d.moods),looks:cleanLooks(d.looks)}; }
+function mskDay(off){ return new Date(Date.now()+3*3600e3-(off||0)*864e5).toISOString().slice(0,10); }
+function cleanStats(v){ v=v||{}; return {day:typeof v.day==='string'?v.day.slice(0,10):'',count:Math.max(0,+v.count||0),streak:Math.max(0,+v.streak||0)}; }
+function bump(st){ const t=mskDay(); return st.day===t?{day:t,count:st.count+1,streak:st.streak||1}:{day:t,count:1,streak:st.day===mskDay(1)?st.streak+1:1}; }
+function normalize(d){ d=d||{}; return {last:clean(d.last),log:list(d.log).map(clean).filter(Boolean).slice(0,20),scene:cleanScene(d.scene),moods:cleanMoods(d.moods),looks:cleanLooks(d.looks),stats:cleanStats(d.stats)}; }
 function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){} return null; }
 const $=id=>document.getElementById(id);
 const CODE=/^[A-Za-z0-9_-]{6,40}$/;
@@ -463,17 +509,37 @@ let state=normalize(null), me=null, code=null, sending=false, shownTs=null, load
 const url=()=>DB_URL+'/rooms/'+code+'.json';
 
 const ACTIVE_MS=2*3600*1000;
+let live={}; try{ live=JSON.parse(store('live-wx')||'{}')||{}; }catch(e){ live={}; }
+function wxOf(c){ return (c>=71&&c<=77)||c===85||c===86?'snow':(c>=51&&c<=67)||(c>=80&&c<=82)||c>=95?'rain':'clear'; }
+async function loadWeather(){
+  await Promise.all(Object.keys(CITY).map(async id=>{ try{ const c=CITY[id];
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat+'&longitude='+c.lon+'&current=temperature_2m,weather_code');
+    const j=await r.json(); if(j&&j.current&&isFinite(+j.current.temperature_2m)) live[id]={weather:wxOf(+j.current.weather_code),temp:Math.round(+j.current.temperature_2m),at:Date.now()}; }catch(e){} }));
+  store('live-wx',JSON.stringify(live)); render();
+}
+function hourTime(){ const h=(new Date().getUTCHours()+3)%24; return h>=6&&h<11?'morning':h>=11&&h<17?'day':h>=17&&h<22?'evening':'night'; }
+function cond(id){ const sc=state.scene; if(sc.mode==='manual') return {time:sc.time,weather:sc.weather,temp:null};
+  const l=live[id], ok=l&&typeof l.at==='number'&&Date.now()-l.at<3*3600*1000&&WX[l.weather];
+  return {time:hourTime(),weather:ok?l.weather:'clear',temp:ok&&isFinite(l.temp)?l.temp:null}; }
+let shownHour='';
 let wasActive=false;
 function progress(){ const t=new Date(2026,10,21), s0=new Date(2026,9,9), now=Date.now(); return {f:Math.min(1,Math.max(0,(now-s0)/(t-s0))),today:now>=t&&now-t<864e5}; }
 function isActive(){ const l=state.last; return !!l&&Date.now()-Math.max(l.ts,l.re?l.re.ts:0)<ACTIVE_MS; }
 function moodOf(id){ const m=state.moods[id]; return m&&new Date(m.ts).toDateString()===new Date().toDateString()?m.k:null; }
 function render(){
-  const last=state.last, scene=$('scene'), pr=progress(), sc=state.scene, indoor=!!INDOOR[sc.place];
-  const gap=168-62*pr.f; FIG.alya.x=181-gap/2; FIG.andrey.x=181+gap/2;
-  acc={hat:!indoor&&sc.weather==='snow',umb:!indoor&&sc.weather==='rain',cup:sc.time==='morning'};
-  weather();
+  const last=state.last, scene=$('scene'), pr=progress(), sc=state.scene;
   const from=last?last.from:'alya', other=from==='alya'?'andrey':'alya';
-  let fx={sky:'',fx:''}; wasActive=isActive();
+  let fx={sky:'',fx:''}; wasActive=isActive(); shownHour=hourTime();
+  const cA=cond('alya'), cN=cond('andrey');
+  const split=sc.place==='cities'&&!wasActive&&!pr.today, place=sc.place==='cities'?'embankment':sc.place, indoor=!!INDOOR[place];
+  const cJ=sc.place==='cities'&&wasActive?cond(last.re?other:from):cA;
+  const mk=c=>({hat:!indoor&&(c.weather==='snow'||(c.temp!==null&&c.temp<=0)),umb:!indoor&&c.weather==='rain',cup:c.time==='morning'});
+  acc={alya:mk(split?cA:cJ),andrey:mk(split?cN:cJ)};
+  const gap=(split?180:168)-(split?74:62)*pr.f; FIG.alya.x=181-gap/2; FIG.andrey.x=181+gap/2;
+  weather({split,place,cA,cN,c:cJ,party:pr.today});
+  $('party').hidden=!pr.today;
+  { const st=state.stats, t=mskDay(), today=st.day===t?st.count:0, streak=st.day===t||st.day===mskDay(1)?st.streak:0;
+    $('stats').hidden=!loaded; $('st-today').textContent=today; $('st-streak').textContent=streak; $('st-streak-t').textContent=plural(streak,'день','дня','дней')+' подряд'; }
   if(wasActive){ let key=last.re?'re_'+last.kind:last.kind; if(!POSES[key]) key=last.kind;
     pose(from,POSES[key].S); pose(other,POSES[key].P); fx=fxMarkup(key,from); }
   else if(pr.today){ pose('alya',POSES.hug.S); pose('andrey',POSES.hug.P); fx=fxMarkup('hug','alya'); }
@@ -509,6 +575,7 @@ function renderControls(){
   const ready=!!DB_URL&&!!code;
   $('setup').hidden=!!DB_URL; $('code-card').hidden=!DB_URL||!!code; $('who-card').hidden=!ready||!!me;
   $('controls').hidden=!ready||!me; $('picks').hidden=me!=='alya';
+  $('pick-time').hidden=$('pick-weather').hidden=state.scene.mode!=='manual';
   $('switch').hidden=!me; $('switch').textContent=me?'Это телефон '+(me==='alya'?'Али':'Андрея')+'. Сменить':'';
   const L=state.last;
   $('bubble').dataset.mine=L&&L.from===me?'1':'0'; $('rebubble').dataset.mine=L&&L.re&&L.from!==me&&me?'1':'0';
@@ -535,19 +602,19 @@ function connect(){
 async function commit(next){
   if(!me||sending||!DB_URL||!code) return false;
   const prev=state; $('hint').className='hint'; sending=true; state=next; render();
-  try{ const r=await fetch(url(),{method:'PATCH',body:JSON.stringify({last:next.last,log:next.log,scene:next.scene})}); if(!r.ok) throw new Error(r.status); }
+  try{ const r=await fetch(url(),{method:'PATCH',body:JSON.stringify({last:next.last,log:next.log,scene:next.scene,stats:next.stats})}); if(!r.ok) throw new Error(r.status); }
   catch(e){ state=prev; sending=false; render(); warn('Не получилось отправить. Проверь интернет и попробуй ещё раз.'); return false; }
   sending=false; renderControls(); return true;
 }
 function send(kind,text){
   const msg=clean({from:me,kind,text,ts:Date.now()}); if(!msg) return;
-  commit(Object.assign({},state,{last:msg,log:[msg].concat(state.log).slice(0,20)})).then(ok=>{ if(ok) notify(NAMES[me]+': '+msg.text); });
+  commit(Object.assign({},state,{last:msg,log:[msg].concat(state.log).slice(0,20),stats:bump(state.stats)})).then(ok=>{ if(ok) notify(NAMES[me]+': '+msg.text); });
 }
 function react(){
   const L=state.last; if(!L||!me||L.from===me||L.re) return;
   const done=Object.assign({},L,{re:{ts:Date.now()}});
   const log=state.log.map((m,i)=>i===0&&m.ts===L.ts?done:m);
-  commit(Object.assign({},state,{last:done,log})).then(ok=>{ if(ok) notify(NAMES[me]+' в ответ: '+REPLY[L.kind]); });
+  commit(Object.assign({},state,{last:done,log,stats:bump(state.stats)})).then(ok=>{ if(ok) notify(NAMES[me]+' в ответ: '+REPLY[L.kind]); });
 }
 async function putChild(path,val){
   if(!me||!DB_URL||!code) return;
@@ -615,7 +682,7 @@ buildFigure('alya'); buildFigure('andrey');
 Object.keys(KINDS).forEach(k=>{ if(k==='note') return;
   const b=document.createElement('button'); b.type='button'; b.id='send-'+k; b.textContent=KINDS[k].label;
   if(KINDS[k].hot) b.className='hot'; b.addEventListener('click',()=>send(k)); $('grid').appendChild(b); });
-[['seg-place','place',PL],['seg-time','time',TIMES],['seg-weather','weather',WX]].forEach(a=>{ Object.keys(a[2]).forEach(v=>{
+[['seg-place','place',PL],['seg-mode','mode',MODES],['seg-time','time',TIMES],['seg-weather','weather',WX]].forEach(a=>{ Object.keys(a[2]).forEach(v=>{
   const b=document.createElement('button'); b.type='button'; b.id='set-'+a[1]+'-'+v; b.dataset.key=a[1]; b.dataset.val=v; b.textContent=a[2][v];
   b.addEventListener('click',()=>setScene(a[1],v)); $(a[0]).appendChild(b); }); });
 Object.keys(MOODS).forEach(k=>{ const b=document.createElement('button'); b.type='button'; b.id='mood-'+k; b.dataset.val=k; b.textContent=MOODS[k].label; b.addEventListener('click',()=>setMood(k)); $('moods').appendChild(b); });
@@ -631,9 +698,10 @@ $('code-form').addEventListener('submit',e=>{ e.preventDefault(); const v=$('cod
 $('tg-form').addEventListener('submit',e=>{ e.preventDefault(); tgSaveToken($('tg-token').value.trim()); });
 $('tg-check').addEventListener('click',tgConnect);
 $('scene').addEventListener('animationend',e=>{ if(e.animationName==='hop') $('scene').classList.remove('play'); });
-render(); countdown(); connect();
-setInterval(()=>{ countdown(); if(isActive()!==wasActive) render(); if(state.last) $('bubble-meta').textContent=NAMES[state.last.from]+' · '+ago(state.last.ts); },60000);
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState!=='visible') return; if(es&&es.readyState===2) connect(); refetch(); });
+render(); countdown(); connect(); loadWeather();
+setInterval(loadWeather,20*60*1000);
+setInterval(()=>{ countdown(); if(isActive()!==wasActive||hourTime()!==shownHour) render(); if(state.last) $('bubble-meta').textContent=NAMES[state.last.from]+' · '+ago(state.last.ts); },60000);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState!=='visible') return; if(es&&es.readyState===2) connect(); refetch(); const l=live.alya; if(!l||Date.now()-l.at>20*60*1000) loadWeather(); });
 })();
 </script>
 </body>
