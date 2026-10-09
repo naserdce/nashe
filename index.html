@@ -123,6 +123,7 @@ h2{font:500 12px var(--body);text-transform:uppercase;letter-spacing:.08em;color
 .card-title{margin:0;font-family:var(--display);font-weight:500;font-size:15px}
 .who-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .who-row button{font:600 15px var(--body);min-height:52px;border-radius:14px;cursor:pointer;background:var(--accent);color:var(--accent-ink);border:0}
+.who-row a{display:flex;align-items:center;justify-content:center;text-decoration:none;font:600 15px var(--body);min-height:52px;border-radius:14px;background:var(--bg);color:var(--ink);border:1.5px solid var(--line)}
 .switch{align-self:center;background:none;border:0;color:var(--muted);font:400 12px var(--body);text-decoration:underline;cursor:pointer;padding:8px}
 </style>
 </head>
@@ -180,6 +181,12 @@ h2{font:500 12px var(--body);text-transform:uppercase;letter-spacing:.08em;color
 
   <h2>Недавнее</h2>
   <ul class="log" id="log"></ul>
+  <div class="card" id="tg-card" hidden>
+    <p class="card-title">Уведомления в Telegram</p>
+    <p class="hint" id="tg-text"></p>
+    <form id="tg-form" hidden><input id="tg-token" type="text" aria-label="Токен бота" placeholder="Токен от BotFather" autocomplete="off" autocapitalize="off"><button type="submit">Сохранить</button></form>
+    <div class="who-row" id="tg-steps" hidden><a id="tg-open" target="_blank" rel="noopener">1. Открыть бота</a><button type="button" id="tg-check">2. Готово</button></div>
+  </div>
   <button type="button" class="switch" id="switch" hidden></button>
 </div>
 <script>
@@ -351,6 +358,10 @@ function normalize(d){ d=d||{}; return {last:clean(d.last),log:list(d.log).map(c
 function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){} return null; }
 const $=id=>document.getElementById(id);
 const CODE=/^[A-Za-z0-9_-]{6,40}$/;
+const TOKEN=/^\d{5,}:[A-Za-z0-9_-]{30,}$/;
+function cleanTg(t){ if(!t||typeof t!=='object'||typeof t.token!=='string'||!TOKEN.test(t.token)) return null;
+  const c=t.chats||{}; return {token:t.token,bot:String(t.bot||'').replace(/[^A-Za-z0-9_]/g,''),chats:{alya:+c.alya||0,andrey:+c.andrey||0}}; }
+let raw={}, tg=null, tgNote='', tgBusy=false;
 let state=normalize(null), me=null, code=null, sending=false, shownTs=null, loaded=false, es=null;
 { let h=''; try{ h=decodeURIComponent(location.hash.slice(1)); }catch(e){}
   if(CODE.test(h)){ code=h; store('pair-code',h); } else { const c=store('pair-code'); if(c&&CODE.test(c)) code=c; }
@@ -382,6 +393,7 @@ function render(){
   renderControls();
 }
 function renderControls(){
+  renderTg();
   const ready=!!DB_URL&&!!code;
   $('setup').hidden=!!DB_URL; $('code-card').hidden=!DB_URL||!!code; $('who-card').hidden=!ready||!!me;
   $('controls').hidden=!ready||!me; $('picks').hidden=me!=='alya';
@@ -393,26 +405,73 @@ function renderControls(){
   if(!$('hint').classList.contains('warn')) $('hint').textContent='Отправь '+(me==='alya'?'Андрею':'Але')+':';
 }
 function warn(t){ const h=$('hint'); h.className='hint warn'; h.textContent=t; }
-function apply(d){ if(sending) return; loaded=true; state=normalize(d); render(); }
+function apply(d){ raw=d&&typeof d==='object'?d:{}; tg=cleanTg(raw.tg); if(sending) return; loaded=true; state=normalize(raw); render(); }
 async function refetch(){ if(!DB_URL||!code) return; try{ const r=await fetch(url()); if(r.ok) apply(await r.json()); }catch(e){} }
 function connect(){
   if(!DB_URL||!code) return;
   if(es) es.close();
   es=new EventSource(url());
   es.addEventListener('put',e=>{ try{ const m=JSON.parse(e.data); if(m.path==='/') apply(m.data); else refetch(); }catch(_){} });
-  es.addEventListener('patch',refetch);
+  es.addEventListener('patch',e=>{ try{ const m=JSON.parse(e.data); if(m.path==='/'&&m.data) apply(Object.assign({},raw,m.data)); else refetch(); }catch(_){} });
   es.addEventListener('cancel',()=>warn('Нет доступа к базе. Проверь код.'));
 }
 async function commit(next){
-  if(!me||sending||!DB_URL||!code) return;
+  if(!me||sending||!DB_URL||!code) return false;
   const prev=state; $('hint').className='hint'; sending=true; state=next; render();
-  try{ const r=await fetch(url(),{method:'PUT',body:JSON.stringify(next)}); if(!r.ok) throw new Error(r.status); }
-  catch(e){ state=prev; sending=false; render(); warn('Не получилось отправить. Проверь интернет и попробуй ещё раз.'); return; }
-  sending=false; renderControls();
+  try{ const r=await fetch(url(),{method:'PATCH',body:JSON.stringify({last:next.last,log:next.log,scene:next.scene})}); if(!r.ok) throw new Error(r.status); }
+  catch(e){ state=prev; sending=false; render(); warn('Не получилось отправить. Проверь интернет и попробуй ещё раз.'); return false; }
+  sending=false; renderControls(); return true;
 }
 function send(kind,text){
   const msg=clean({from:me,kind,text,ts:Date.now()}); if(!msg) return;
-  commit({last:msg,log:[msg].concat(state.log).slice(0,20),scene:state.scene});
+  commit({last:msg,log:[msg].concat(state.log).slice(0,20),scene:state.scene}).then(ok=>{ if(ok) notify(msg); });
+}
+// ---------- Telegram notifications ----------
+async function tgApi(token,method,params){
+  const r=await fetch('https://api.telegram.org/bot'+token+'/'+method,{method:'POST',body:new URLSearchParams(params)});
+  const j=await r.json(); if(!j.ok) throw new Error(j.description||'telegram'); return j.result;
+}
+function notify(msg){
+  const other=me==='alya'?'andrey':'alya'; if(!tg||!tg.chats[other]) return;
+  tgApi(tg.token,'sendMessage',{chat_id:String(tg.chats[other]),text:NAMES[me]+': '+msg.text,
+    reply_markup:JSON.stringify({inline_keyboard:[[{text:'Открыть',url:location.origin+location.pathname+'#'+code}]]})}).catch(()=>{});
+}
+function renderTg(){
+  const card=$('tg-card'); card.hidden=!DB_URL||!code||!me||!loaded; if(card.hidden) return;
+  const other=me==='alya'?'andrey':'alya', mine=tg&&tg.chats[me], theirs=tg&&tg.chats[other];
+  $('tg-form').hidden=!!tg||me!=='alya'; $('tg-steps').hidden=!tg||!!mine;
+  $('tg-check').disabled=tgBusy;
+  let t;
+  if(!tg) t=me==='alya'?'Вставь токен бота, который выдал BotFather.':'Аля ещё не подключила бота.';
+  else if(!mine) t='Открой бота, нажми Start, вернись сюда и нажми «Готово».';
+  else t='У тебя включены. У '+(other==='alya'?'Али':'Андрея')+' '+(theirs?'тоже включены.':'пока нет.');
+  $('tg-text').textContent=tgNote||t; $('tg-text').className=tgNote?'hint warn':'hint';
+  if(tg) $('tg-open').href='https://t.me/'+tg.bot+'?start='+me;
+}
+async function tgSaveToken(v){
+  if(tgBusy) return;
+  if(!TOKEN.test(v)){ tgNote='Это не похоже на токен. Он выглядит как 123456789:AAH… и копируется целиком.'; renderTg(); return; }
+  tgBusy=true;
+  try{ const bot=await tgApi(v,'getMe',{}); const obj={token:v,bot:bot.username,chats:{alya:0,andrey:0}};
+    const r=await fetch(DB_URL+'/rooms/'+code+'/tg.json',{method:'PUT',body:JSON.stringify(obj)}); if(!r.ok) throw new Error('db');
+    raw=Object.assign({},raw,{tg:obj}); tg=cleanTg(obj); tgNote=''; }
+  catch(e){ tgNote='Не получилось проверить токен. Убедись, что он скопирован целиком, и попробуй ещё раз.'; }
+  tgBusy=false; renderTg();
+}
+async function tgConnect(){
+  if(!tg||tgBusy) return; tgBusy=true; renderTg();
+  const other=me==='alya'?'andrey':'alya';
+  try{
+    const ups=await tgApi(tg.token,'getUpdates',{limit:'100',allowed_updates:'["message"]'});
+    let exact=0, plain=0;
+    ups.forEach(u=>{ const m=u.message; if(!m||!m.chat||m.chat.type!=='private'||typeof m.text!=='string') return;
+      const t=m.text.trim(); if(t==='/start '+me) exact=m.chat.id; else if(t==='/start'&&m.chat.id!==tg.chats[other]) plain=m.chat.id; });
+    const id=exact||plain;
+    if(!id) tgNote='Пока не вижу тебя. Открой бота, нажми Start и попробуй ещё раз.';
+    else { const r=await fetch(DB_URL+'/rooms/'+code+'/tg/chats/'+me+'.json',{method:'PUT',body:JSON.stringify(id)}); if(!r.ok) throw new Error('db');
+      tg.chats[me]=id; tgNote=''; tgApi(tg.token,'sendMessage',{chat_id:String(id),text:'Готово! Сюда будут приходить уведомления.'}).catch(()=>{}); }
+  }catch(e){ tgNote='Не получилось связаться с Telegram. Попробуй ещё раз.'; }
+  tgBusy=false; renderTg();
 }
 function setScene(key,val){
   if(me!=='alya'||state.scene[key]===val) return;
@@ -434,6 +493,8 @@ $('note-form').addEventListener('submit',e=>{ e.preventDefault(); const i=$('not
 $('code-form').addEventListener('submit',e=>{ e.preventDefault(); const v=$('code-input').value.trim();
   if(!CODE.test(v)){ $('code-input').value=''; $('code-input').placeholder='Код не подходит'; return; }
   code=v; store('pair-code',v); try{ location.hash=v; }catch(_){} render(); connect(); });
+$('tg-form').addEventListener('submit',e=>{ e.preventDefault(); tgSaveToken($('tg-token').value.trim()); });
+$('tg-check').addEventListener('click',tgConnect);
 $('scene').addEventListener('animationend',e=>{ if(e.animationName==='hop') $('scene').classList.remove('play'); });
 render(); countdown(); connect();
 setInterval(()=>{ countdown(); if(state.last) $('bubble-meta').textContent=NAMES[state.last.from]+' · '+ago(state.last.ts); },60000);
